@@ -18,16 +18,16 @@ class Canvas(width: Int, height: Int, min: Complex[Double], max: Complex[Double]
     width >= 100 && height >= 100 && width <= 1000 && height <= 1000,
     "width and height must be between 200px-1000px")
 
-  val Offset = 25
-  val realStep =
+  private val Offset = 0
+  private val realStep =
     (max.real - min.real) / width
-  val imagStep =
+  private val imagStep =
     (max.imag - min.imag) / height
 
-  val fractalRootPane = new Pane()
-  val canvas          = new JavaFxCanvas()
+  private val fractalRootPane = new Pane()
+  private val canvas          = new JavaFxCanvas()
   fractalRootPane.getChildren.add(canvas)
-  val graphicsContext = canvas.getGraphicsContext2D
+  private val graphicsContext = canvas.getGraphicsContext2D
 
   private def paintSet(): Unit = {
     canvas.setHeight(height.toDouble)
@@ -35,8 +35,8 @@ class Canvas(width: Int, height: Int, min: Complex[Double], max: Complex[Double]
     canvas.setLayoutX(Offset.toDouble)
     canvas.setLayoutY(Offset.toDouble)
 
-    val map = mutable.Map.empty[Int, Int] // This map is to show the distribution of the iterations 
-    (0 to 256).foreach(map.addOne(_, 0))
+    val map = mutable.Map.empty[Int, Int] // This map is to show the distribution of the iterations
+    (0 to 255).foreach(map.addOne(_, 0))
 
     for (x <- Range.inclusive(0, width)) {
       val r = min.real + (realStep * x)
@@ -44,7 +44,11 @@ class Canvas(width: Int, height: Int, min: Complex[Double], max: Complex[Double]
         val imag             = min.imag + (imagStep * y)
         val convergenceValue = Mandelbrot.compute(Complex[Double](r, imag))
         map.addOne((convergenceValue, map(convergenceValue) + 1))
-        val greyScale = math.min(convergenceValue / 40.0, 1.0) // the number divide by should be smaller than 256, making it smaller reduces resolution
+        val greyScale =
+          1.0 - math.min(
+            convergenceValue / 40.0,
+            1.0
+          ) // the number divide by should be smaller than 256, making it smaller reduces resolution
         graphicsContext.setFill(Color.color(greyScale, greyScale, greyScale))
         graphicsContext.fillRect(x.toDouble, y.toDouble, 1.0, 1.0)
       }
