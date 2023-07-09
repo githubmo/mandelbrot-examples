@@ -8,6 +8,7 @@ import javafx.stage.Stage
 import spire.math.Complex
 
 import scala.collection.mutable
+import scala.collection.parallel.CollectionConverters.*
 
 class Canvas(width: Int, height: Int, min: Complex[Double], max: Complex[Double]) {
   require(
@@ -29,36 +30,71 @@ class Canvas(width: Int, height: Int, min: Complex[Double], max: Complex[Double]
   fractalRootPane.getChildren.add(canvas)
   private val graphicsContext = canvas.getGraphicsContext2D
 
-  private def paintSet(): Unit = {
+  private def canvasSetup(): Unit = {
     canvas.setHeight(height.toDouble)
     canvas.setWidth(width.toDouble)
     canvas.setLayoutX(Offset.toDouble)
     canvas.setLayoutY(Offset.toDouble)
+  }
 
-    val map = mutable.Map.empty[Int, Int] // This map is to show the distribution of the iterations
-    (0 to 255).foreach(map.addOne(_, 0))
+//  private def paintSet(): Unit = {
+//    canvasSetup()
+//
+//    val map = mutable.Map.empty[Int, Int] // This map is to show the distribution of the iterations
+//    (0 to 255).foreach(map.addOne(_, 0))
+//
+//    for (x <- Range.inclusive(0, width)) {
+//      val r = min.real + (realStep * x)
+//      for (y <- Range.inclusive(0, height)) {
+//        val imag             = min.imag + (imagStep * y)
+//        val convergenceValue = Mandelbrot.compute(Complex[Double](r, imag))
+//        map.addOne((convergenceValue, map(convergenceValue) + 1))
+//        val greyScale =
+//          1.0 - math.min(
+//            convergenceValue / 40.0,
+//            1.0
+//          ) // the number divide by should be smaller than 256, making it smaller reduces resolution
+//        graphicsContext.setFill(Color.color(greyScale, greyScale, greyScale))
+//        graphicsContext.fillRect(x.toDouble, y.toDouble, 1.0, 1.0)
+//      }
+//    }
+//
+//    println(map.mkString(", \n"))
+//  }
 
-    for (x <- Range.inclusive(0, width)) {
-      val r = min.real + (realStep * x)
-      for (y <- Range.inclusive(0, height)) {
-        val imag             = min.imag + (imagStep * y)
-        val convergenceValue = Mandelbrot.compute(Complex[Double](r, imag))
-        map.addOne((convergenceValue, map(convergenceValue) + 1))
-        val greyScale =
-          1.0 - math.min(
-            convergenceValue / 40.0,
-            1.0
-          ) // the number divide by should be smaller than 256, making it smaller reduces resolution
-        graphicsContext.setFill(Color.color(greyScale, greyScale, greyScale))
-        graphicsContext.fillRect(x.toDouble, y.toDouble, 1.0, 1.0)
-      }
+  // Parallel version
+  private def paintSetPar(): Unit = {
+
+    canvasSetup()
+
+    val fullRange = for {
+      x <- Range.inclusive(0, width).par
+      r = min.real + (realStep * x)
+      y <- Range.inclusive(0, height)
+      imag = min.imag + (imagStep * y)
+
+    } yield (x, y, r, imag)
+
+    val greyScales = fullRange.map { case (x, y, r, imag) =>
+      val convergenceValue = Mandelbrot.compute(Complex[Double](r, imag))
+      val greyScale =
+        1.0 - math.min(
+          convergenceValue / 40.0,
+          1.0
+        ) // the number divide by should be smaller than 256, making it smaller reduces resolution
+
+      (x, y, greyScale)
     }
 
-    println(map.mkString(", \n"))
+    // unfortunately the canvas colouring cannot be parallelised
+    greyScales.toList.foreach { case (x, y, greyScale) =>
+      graphicsContext.setFill(Color.color(greyScale, greyScale, greyScale))
+      graphicsContext.fillRect(x.toDouble, y.toDouble, 1.0, 1.0)
+    }
   }
 
   def displayScene(primaryStage: Stage): Unit = {
-    paintSet()
+    paintSetPar()
     val scene = new Scene(fractalRootPane, (width + 2 * Offset).toDouble, (height + 2 * Offset).toDouble)
     primaryStage.setScene(scene)
     primaryStage.show()

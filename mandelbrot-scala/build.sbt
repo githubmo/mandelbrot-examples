@@ -8,9 +8,10 @@ ThisBuild / organizationName := "Mozek Technologies Ltd"
 lazy val root = (project in file(".")).settings(
   name := "Mandelbrot Scala",
   libraryDependencies ++= Seq(
-    "org.typelevel" %% "spire"     % "0.18.0",
-    "org.scalafx"   %% "scalafx"   % "20.0.0-R31",
-    "org.scalatest" %% "scalatest" % "3.2.16" % "test"),
+    "org.typelevel"          %% "spire"                      % "0.18.0",
+    "org.scalafx"            %% "scalafx"                    % "20.0.0-R31",
+    "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
+    "org.scalatest"          %% "scalatest"                  % "3.2.16" % "test"),
   scalacOptions := {
     Seq(
       "-deprecation",
