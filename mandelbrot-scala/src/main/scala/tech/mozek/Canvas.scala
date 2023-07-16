@@ -88,7 +88,10 @@ class Canvas(width: Int, height: Int, min: Complex[Double], max: Complex[Double]
 
     // unfortunately the canvas colouring cannot be parallelised
     greyScales.toList.foreach { case (x, y, greyScale) =>
-      graphicsContext.setFill(Color.color(greyScale, greyScale, greyScale))
+      val red   = if (greyScale < 0.33) greyScale else 0.0
+      val green = if (greyScale >= 0.33 && greyScale < 0.67) greyScale else 0.0
+      val blue  = if (greyScale >= 0.67) greyScale else 0.0
+      graphicsContext.setFill(Color.color(red, green, blue))
       graphicsContext.fillRect(x.toDouble, y.toDouble, 1.0, 1.0)
     }
   }
